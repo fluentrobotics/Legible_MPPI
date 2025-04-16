@@ -14,4 +14,4 @@ The implmentation is based on the [Pytorch-MPPI](https://github.com/UM-ARM-Lab/p
 pip install pytorch-mppi
 ```
 
-An example on how to use the MPPIController for an algorithim with ROS2 can be found in [ros2_wrapper.py](https://github.com/fluentrobotics/Legible_MPPI/blob/main/src/ros2_wrapper.py)
+An example on how to use the MPPIController for an algorithim with ROS2 can be found in [ros2_wrapper.py](https://github.com/fluentrobotics/Legible_MPPI/blob/main/src/ros2_wrapper.py). Note that this example is based on a Stretch2 RE robot with the human poses obtained from motion capture and published on the ROS2 tf.
