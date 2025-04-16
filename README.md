@@ -4,10 +4,10 @@ MPPI Implementation for various legible algorithms for social robot navigation.
 The implmentation is based on the [Pytorch-MPPI](https://github.com/UM-ARM-Lab/pytorch_mppi/tree/master) package. The algorithims included are:
 
 - [Social Momentum](https://github.com/fluentrobotics/Legible_MPPI/blob/main/src/sm_mppi.py)
- ~~- Anca's Legibility ~~
- ~~- Anca's Legibility (passing side goal) ~~
- ~~- Anca's Legibility (passing side dynamic goals) ~~
- ~~- Vanilla MPPI + Constant Velocity predictions ~~
+-  ~~Anca's Legibility~~
+-  ~~Anca's Legibility (passing side goal)~~
+-  ~~Anca's Legibility (passing side dynamic goals)~~
+-  ~~Vanilla MPPI + Constant Velocity predictions~~
 
 # Installation
 ```shell
