@@ -1,17 +1,10 @@
-import rclpy
-from rclpy.node import Node
-from geometry_msgs.msg import TwistStamped
-from tf2_wrapper import TF2Wrapper
 import torch
 from pytorch_mppi import MPPI
 from config import *
 from utils import dynamics, normalize_angle, save_data
 import numpy as np
-import math
-import time
 from shapely.geometry import Polygon, MultiPolygon, Point
 from shapely.vectorized import contains
-from playsound import playsound
 
 class SMMPPIController:
     def __init__(self,static_obs, device):
@@ -19,7 +12,6 @@ class SMMPPIController:
         self.horizon = HORIZON_LENGTH 
         self.dt = DT
         self.device = device
-        # self.aligning_to_goal = False  # Flag to indicate orientation step (CAN BE Ignored for now)
         self.angular_alignment_threshold = ANGULAR_THRESHOLD   # Angular error threshold in radians
         self.goals = torch.tensor(GOALS, dtype=torch.float32).to(self.device)
         self.rollouts = torch.zeros((7, NUM_SAMPLES, 2))
@@ -91,45 +83,44 @@ class SMMPPIController:
         return 0
 
     def dynamics(self, s: torch.Tensor, a: torch.Tensor, t=None) -> torch.Tensor:
-            """
-            Input:
-            s: robot global state  (shape: BS x 3)
-            a: robot action   (shape: BS x 2)
+        """
+        Input:
+        s: robot global state  (shape: BS x 3)
+        a: robot action   (shape: BS x 2)
 
 
-            Output:
-            next robot global state after executing action (shape: BS x 3)
-            """
-            assert s.ndim == 2 and s.shape[-1] == 3
-            assert a.ndim == 2 and a.shape[-1] == 2
+        Output:
+        next robot global state after executing action (shape: BS x 3)
+        """
+        assert s.ndim == 2 and s.shape[-1] == 3
+        assert a.ndim == 2 and a.shape[-1] == 2
 
-            dt = self.dt
+        dt = self.dt
 
-            self.s2_ego.zero_()
-            s2_ego = torch.zeros_like(s).to(self.device)
-            #print("S2 ego shape ", s2_ego.shape)
-            s2_ego = self.s2_ego
-            d_theta = a[:, 1] * dt
-            turning_radius = a[:, 0] / a[:, 1]
+        self.s2_ego.zero_()
+        s2_ego = torch.zeros_like(s).to(self.device)
+        s2_ego = self.s2_ego
+        d_theta = a[:, 1] * dt
+        turning_radius = a[:, 0] / a[:, 1]
 
-            s2_ego[:, 0] = torch.where(
-                a[:, 1] == 0, a[:, 0] * dt, turning_radius * torch.sin(d_theta)
-            )
-            s2_ego[:, 1] = torch.where(
-                a[:, 1] == 0, 0.0, turning_radius * (1.0 - torch.cos(d_theta))
-            )
-            s2_ego[:, 2] = torch.where(a[:, 1] == 0, 0.0, d_theta)
+        s2_ego[:, 0] = torch.where(
+            a[:, 1] == 0, a[:, 0] * dt, turning_radius * torch.sin(d_theta)
+        )
+        s2_ego[:, 1] = torch.where(
+            a[:, 1] == 0, 0.0, turning_radius * (1.0 - torch.cos(d_theta))
+        )
+        s2_ego[:, 2] = torch.where(a[:, 1] == 0, 0.0, d_theta)
 
-            s2_global = torch.zeros_like(s)
-            s2_global[:, 0] = (
-                s[:, 0] + s2_ego[:, 0] * torch.cos(s[:, 2]) - s2_ego[:, 1] * torch.sin(s[:, 2])
-            )
-            s2_global[:, 1] = (
-                s[:, 1] + s2_ego[:, 0] * torch.sin(s[:, 2]) + s2_ego[:, 1] * torch.cos(s[:, 2])
-            )
-            s2_global[:, 2] = normalize_angle(s[:, 2] + s2_ego[:, 2])
+        s2_global = torch.zeros_like(s)
+        s2_global[:, 0] = (
+            s[:, 0] + s2_ego[:, 0] * torch.cos(s[:, 2]) - s2_ego[:, 1] * torch.sin(s[:, 2])
+        )
+        s2_global[:, 1] = (
+            s[:, 1] + s2_ego[:, 0] * torch.sin(s[:, 2]) + s2_ego[:, 1] * torch.cos(s[:, 2])
+        )
+        s2_global[:, 2] = normalize_angle(s[:, 2] + s2_ego[:, 2])
 
-            return s2_global
+        return s2_global
 
 
     def terminal_cost(self, state: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
@@ -145,10 +136,12 @@ class SMMPPIController:
             next_y_states = self.agent_states[i][1] + torch.linspace(self.dt,self.horizon*self.dt,self.horizon,device=self.device)* self.agent_velocities[i][1]
             human_states  = torch.stack((next_x_states,next_y_states), dim=1)
             dist = torch.norm(state_squeezed[:,:,:2] -  human_states,dim=2)
+            # social mometum cost
             sm_costs += self.SocialCost(state, i, human_states)
             #dynamic obstacle cost
             dynamic_obstacle_cost = torch.where(dist < 1.0, 1 / (1 + dist**2), torch.tensor(0.0, device=self.device))
             dynamic_obstacle_costs += torch.sum(dynamic_obstacle_cost,dim=1)
+            #static obstacle cost
             static_costs = self.collision_avoidance_cost(state_squeezed)
 
         return 2*(goal_cost) + sm_costs + dynamic_obstacle_costs + 5*static_costs  #weights can be tuned for desired behaviour
@@ -178,7 +171,6 @@ class SMMPPIController:
             r_bc = human_states - r_c
             r_ac_3d = torch.nn.functional.pad(r_ac, (0, 1), "constant", 0)  # [N, T', 3]
             r_bc_3d = torch.nn.functional.pad(r_bc, (0, 1), "constant", 0)  # [N, T', 3]
-                # Pad robot velocity to 3D
             robot_velocity_3d = torch.nn.functional.pad(self.robot_velocity, (0, 1), "constant", 0)  # Shape: [3]
             agent_velocities_3d = torch.nn.functional.pad(self.agent_velocities[i], (0, 1), "constant", 0) 
             l_ab = torch.cross(r_ac_3d, robot_velocity_3d[None,None,:], dim=2) + torch.cross(r_bc_3d, agent_velocities_3d[None,None,:], dim=2)

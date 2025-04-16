@@ -53,7 +53,7 @@ class MPPLocalPlannerMPPI(Node):
         if T_map_baselink is None:
             print("Can't find robot pose")
             return
-        # Convert pose to MPPI state representation
+            # Convert pose to MPPI state representation
         yaw = 2.0 * math.atan2(
             T_map_baselink.rotation.z, T_map_baselink.rotation.w
         )  # NOTE: assuming roll and pitch are negligible
@@ -87,7 +87,7 @@ class MPPLocalPlannerMPPI(Node):
                 agent_state = torch.tensor([T_map_agent.translation.x, T_map_agent.translation.y, yaw], dtype=torch.float32).to(self.device)
                 agent_state[2] = torch.arctan2(torch.sin(agent_state[2]), torch.cos(agent_state[2]))
                 self.agent_states[i] = agent_state
-                    # Calculate velocity if previous state exists
+                # Calculate velocity if previous state exists
             if i in self.previous_agent_states:
                 prev_x, prev_y, prev_yaw = self.previous_agent_states[i]
                 velocity = torch.tensor([
@@ -97,6 +97,8 @@ class MPPLocalPlannerMPPI(Node):
 
                 self.agent_velocities[i] = velocity
             self.previous_agent_states[i] = agent_state
+
+
         # Compute optimal control using MPPI
         action, self.costs, self.rollouts, termination = self.controller.compute_control(
             self.current_state, self.previous_robot_state, self.robot_velocity, self.agent_states, self.previous_agent_states, self.agent_velocities
