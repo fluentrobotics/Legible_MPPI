@@ -1,17 +1,23 @@
-# Legible_MPPI
-MPPI Implementation for various legible algorithms for social robot navigation.
+# Legible MPPI
 
-The implmentation is based on the [Pytorch-MPPI](https://github.com/UM-ARM-Lab/pytorch_mppi/tree/master) package. The algorithims included are:
+Code accompanying *Rethinking Legibility in Social Robot Hallway Navigation: Impact of Intent Representation and Human Distraction* by Pranav Goyal, Andrew Stratton, and Christoforos Mavrogiannis. The paper studies how robot intent representation and pedestrian attention affect coordination in head-on hallway encounters. The controllers use model predictive path integral (MPPI) control built on [PyTorch-MPPI](https://github.com/UM-ARM-Lab/pytorch_mppi).
 
-- [Social Momentum](https://github.com/fluentrobotics/Legible_MPPI/blob/main/src/sm_mppi.py)
--  ~~DS Legibility~~
--  ~~DS Legibility (passing side goal)~~
--  ~~DS Legibility (passing side dynamic goals)~~
--  ~~Vanilla MPPI + Constant Velocity predictions~~
+**Work in progress:** This repository currently includes the [Social Momentum controller](src/sm_mppi.py) and a [ROS 2 example](src/ros2_wrapper.py). The goal-based legibility (GL), passing-side legibility (PL), dynamic passing-side legibility (DPL), and no-legibility (NL) controllers from the paper will be added.
 
-# Installation
-```shell
-pip install pytorch-mppi
+## Setup
+
+Use a ROS 2 Python environment with message and TF2 packages, then install the Python dependencies:
+
+```bash
+pip install torch pytorch-mppi numpy shapely
 ```
 
-An example on how to use the MPPIController for an algorithim with ROS2 can be found in [ros2_wrapper.py](https://github.com/fluentrobotics/Legible_MPPI/blob/main/src/ros2_wrapper.py). Note that this example is based on a Stretch RE2 robot with the human poses obtained from motion capture and published on the ROS2 tf.
+The example expects `map` to `base_link` and `map` to `human_1` TF transforms and publishes `TwistStamped` commands to `/stretch/cmd_vel`. Set the hallway geometry and goals in [`src/config.py`](src/config.py) for your environment, then run:
+
+```bash
+python3 src/ros2_wrapper.py
+```
+
+## License
+
+[BSD 3-Clause](LICENSE.md).
