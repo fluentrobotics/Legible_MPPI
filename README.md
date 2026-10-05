@@ -1,21 +1,76 @@
 # Legible MPPI
 
-Code accompanying *Rethinking Legibility in Social Robot Hallway Navigation: Impact of Intent Representation and Human Distraction* by Pranav Goyal, Andrew Stratton, and Christoforos Mavrogiannis. The paper studies how robot intent representation and pedestrian attention affect coordination in head-on hallway encounters. The controllers use model predictive path integral (MPPI) control built on [PyTorch-MPPI](https://github.com/UM-ARM-Lab/pytorch_mppi).
+Code accompanying [*Rethinking Legibility in Social Robot Hallway Navigation: Impact of Intent Representation and Human Distraction*](https://arxiv.org/abs/2609.40158), by Pranav Goyal, Andrew Stratton, and Christoforos Mavrogiannis (2026).
 
-**Work in progress:** This repository currently includes the [Social Momentum controller](src/sm_mppi.py) and a [ROS 2 example](src/ros2_wrapper.py). The goal-based legibility (GL), passing-side legibility (PL), dynamic passing-side legibility (DPL), and no-legibility (NL) controllers from the paper will be added.
+The repository provides five controllers for social robot navigation using model predictive path integral control with [PyTorch-MPPI](https://github.com/UM-ARM-Lab/pytorch_mppi), alongside a configurable ROS 2 example.
 
-## Setup
+| Algorithm | Controller |
+| --- | --- |
+| Social Momentum (SM) | [`SMMPPIController`](src/sm_mppi.py) |
+| No legibility (NL) | [`NLMPPIController`](src/nl_mppi.py) |
+| Goal-based legibility (GL) | [`GLMPPIController`](src/gl_mppi.py) |
+| Passing-side legibility (PL) | [`PLMPPIController`](src/pl_mppi.py) |
+| Dynamic passing-side legibility (DPL) | [`DPLMPPIController`](src/dpl_mppi.py) |
 
-Use a ROS 2 Python environment with message and TF2 packages, then install the Python dependencies:
+## Installation
+
+From the repository root, using Python 3.10:
 
 ```bash
-pip install torch pytorch-mppi numpy shapely
+python3 -m pip install -r requirements.txt
+export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
 ```
 
-The example expects `map` to `base_link` and `map` to `human_1` TF transforms and publishes `TwistStamped` commands to `/stretch/cmd_vel`. Set the hallway geometry and goals in [`src/config.py`](src/config.py) for your environment, then run:
+## Usage
+
+```python
+import torch
+
+from dpl_mppi import DPLMPPIController
+
+controller = DPLMPPIController([], "cpu", goal=(0.0, -1.5))
+action, rollouts, costs, reached = controller.compute_control(
+    current_state=torch.tensor([0.0, 1.4, -torch.pi / 2]),
+    robot_velocity=torch.tensor([0.0, -0.3]),
+    agent_states={0: torch.tensor([0.2, 0.4, torch.pi / 2])},
+    agent_velocities={0: torch.tensor([0.0, 0.3])},
+)
+```
+
+States are `[x, y, yaw]`, world-frame velocities are `[vx, vy]`, and actions are `[linear_speed, yaw_rate]`, in meters, seconds, and radians. Use float32 tensors on the controller's device, at least one tracked pedestrian, and matching pedestrian IDs. Static obstacles are polygons in the same coordinate frame.
+
+Stop when `reached` is true; use `set_goal((x, y))` to select the next destination. GL requires `hallway_goals=((x1, y1), (x2, y2))`, with `goal` set to one endpoint. PL requires `passing_side=-1` or `1`. Numerical settings are defined in [`MPPIConfig`](src/config.py).
+
+## ROS 2
+
+The example requires `rclpy`, `geometry_msgs`, and `tf2_ros`. Configure the hallway polygons in [`example_config.py`](src/example_config.py):
 
 ```bash
-python3 src/ros2_wrapper.py
+python3 src/ros2_wrapper.py --ros-args -p algorithm:=dpl
+```
+
+It uses `map` to `base_link` and `map` to `human_1` transforms and publishes `TwistStamped` to `/cmd_vel`. Configure frames, topic, and goal through the parameters in [`ros2_wrapper.py`](src/ros2_wrapper.py).
+
+## Tests
+
+```bash
+PYTHONPATH=src python3 -m unittest discover -s tests -v
+```
+
+## Citation
+
+If you use this code, please cite the paper:
+
+```bibtex
+@misc{goyal2026rethinkinglegibility,
+  title         = {Rethinking Legibility in Social Robot Hallway Navigation: Impact of Intent Representation and Human Distraction},
+  author        = {Pranav Goyal and Andrew Stratton and Christoforos Mavrogiannis},
+  year          = {2026},
+  eprint        = {2609.40158},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.RO},
+  url           = {https://arxiv.org/abs/2609.40158}
+}
 ```
 
 ## License

@@ -1,0 +1,4 @@
+numpy==1.26.4
+pytorch-mppi==0.8.0
+shapely==2.0.6
+torch==1.13.1
