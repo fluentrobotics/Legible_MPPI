@@ -1,6 +1,6 @@
 # Legible MPPI
 
-Code accompanying [*Rethinking Legibility in Social Robot Hallway Navigation: Impact of Intent Representation and Human Distraction*](https://arxiv.org/abs/2609.40158), by Pranav Goyal, Andrew Stratton, and Christoforos Mavrogiannis (2026).
+Code accompanying [*Intent Representation and Human Distraction Modulate the Effects of Legible Robot Motion in Hallway Navigation*](https://arxiv.org/abs/2609.40158), by Pranav Goyal, Andrew Stratton, and Christoforos Mavrogiannis (2026).
 
 The repository provides five controllers for social robot navigation using model predictive path integral control with [PyTorch-MPPI](https://github.com/UM-ARM-Lab/pytorch_mppi), alongside a configurable ROS 2 example.
 
@@ -63,7 +63,7 @@ If you use this code, please cite the paper:
 
 ```bibtex
 @misc{goyal2026rethinkinglegibility,
-  title         = {Rethinking Legibility in Social Robot Hallway Navigation: Impact of Intent Representation and Human Distraction},
+  title         = {Intent Representation and Human Distraction Modulate the Effects of Legible Robot Motion in Hallway Navigation},
   author        = {Pranav Goyal and Andrew Stratton and Christoforos Mavrogiannis},
   year          = {2026},
   eprint        = {2609.40158},
